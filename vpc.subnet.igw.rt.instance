@@ -1,0 +1,63 @@
+provider "aws" {
+region = "ap-south-1"
+}
+
+resource "aws_vpc" "my-vpc" {
+cidr_block = "172.16.0.0/16"
+tags = {
+Name = "my-vpc"
+}
+}
+resource "aws_subnet" "public1a" {
+vpc_id = aws_vpc.my-vpc.id
+cidr_block = "172.16.0.0/24"
+availability_zone = "ap-south-1a"
+tags = {
+Name = "public1a"
+}
+}
+resource "aws_subnet" "public1b" {
+vpc_id = aws_vpc.my-vpc.id
+cidr_block = "172.16.1.0/24"
+availability_zone = "ap-south-1b"
+tags = {
+Name = "public1b"
+}
+}
+resource "aws_internet_gateway" "my-igw" {
+vpc_id = aws_vpc.my-vpc.id
+tags = {
+Name = "my-igw"
+}
+}
+resource "aws_route_table" "my-rt" {
+vpc_id = aws_vpc.my-vpc.id
+route {
+cidr_block = "0.0.0.0/0"
+gateway_id = aws_internet_gateway.my-igw.id
+}
+tags = {
+Name = "my-rt"
+}
+}
+
+resource "aws_route_table_association" "subnet-associate1" {
+subnet_id = aws_subnet.public1a.id
+route_table_id = aws_route_table.my-rt.id
+}
+
+resource "aws_route_table_association" "subnet-associate2" {
+subnet_id = aws_subnet.public1b.id
+route_table_id = aws_route_table.my-rt.id
+}
+
+resource "aws_instance" "jenkins" {
+ami = "ami-0f8ca728008ff5af4"
+instance_type = "t2.micro"
+key_name = "universal"
+subnet_id = aws_subnet.public1a.id
+associate_public_ip_address = "true"
+tags = {
+Name = "jenkins"
+}
+}
